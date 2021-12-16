@@ -7,11 +7,8 @@ params.ref = "$baseDir/dm6.fa"
 params.fai = "$baseDir/dm6.fa.fai"
 params.dict = "$baseDir/dm6.dict"
 params.outdir = "$baseDir/outdir"
-//params.parent = 'S19'
-//params.allele_filter = 2
 params.snpeff_ref = 'BDGP6.28.99'
 
-//params.py_script = '/mnt/beegfs/home1/reid/ajr236/projects/hansong/mutant_variant_calling/remove_parental2.py'
 
 log.info """\
         DROSOPHILA MUTANT VARIANT CALLING PIPELINE (dmvar)
@@ -48,7 +45,7 @@ Channel
     .first() // Converts to a value channel to avoid consuming the reference
     .set{dict_ch}
 
-// Read in samplesheet and get vcfs as two channels (one for making/checking indexes, one for the actual GVCF combining)
+// Read in samplesheet and get vcfs
 Channel
     .fromPath(params.ss, checkIfExists: true)
     .splitCsv(header:true)
@@ -61,21 +58,6 @@ Channel
     .splitCsv(header:true)
     .map{row -> file(row.vcf + '.tbi', checkIfExists: true)}
     .set{ samples_index_ch }
-
-//process indexVCFs {
-//    input:
- //   path vcf from samples_ch1
-
- //   output:
- //   path "${vcf}.tbi" into samples_index_ch
-
-//    script:
-//    if(!file("${vcf}.tbi").exists())
- //   """
- //   tabix -p vcf $vcf
- //   """
-
-//}
 
 process combineGVCFs {
     input:
@@ -182,21 +164,3 @@ process annotate_variants {
     snpEff ann ${params.snpeff_ref} -dataDir /tmp/snpEff $vcf > "${vcf}.snpeff.vcf"
     """
 }
-
-//Run python script remove_parental2.py
-//process cohort_filtering {
-//    publishDir params.outdir, mode:'copy'
-
-//    input:
-//    path vcf from snp_ann_vcf_ch
-//    path script from script_ch
-
-//    output:
-//    file "${vcf}.cohort_filter.vcf" into cohort_vcf_ch
-//    file "${vcf}.cohort_filter.tsv" into cohort_tsv_ch
-    
-//    script:
-//    """
-//    python $script -p ${params.parent} -o ${vcf}.cohort_filter.vcf -a 2 -f HIGH,MODERATE $vcf > ${vcf}.cohort_filter.tsv
-//    """
-//}
