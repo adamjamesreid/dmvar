@@ -153,6 +153,8 @@ process filter_indels {
 
 //Annotate variants with snpeff
 process annotate_variants {
+    publishDir params.outdir, mode:'copy'
+
     input:
     path vcf from snps_filt_ch.mix(indels_filt_ch) // Mix snps and indel channels together
 
