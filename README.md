@@ -17,7 +17,11 @@ nfcore-sarek-2.7.1.img
 
 `nextflow run dmvar.nf -c gurdon.config -c nextflow.config -with-singularity nfcore-sarek-2.7.1.img --ss <dmvar_samplesheet> --ref dm6.fa --dict dm6.dict --fai dm6.fa.fai --snpeff_ref BDGP6.28.99 --outdir dmvar_outdir`
 
-3. Run python script to identify variants of interest
+3. Run python script to identify variants of interest in Excel files per parental control
+
+N.b. This incorporates remove_parental2.py and currently has hard coded paths and hidden requirements!
+
+`python dmvar_results.py ../NVS024_vcf_samplesheet.csv snps_filtered_pass.vcf.snpeff.vcf`
 
 ## Samplesheets
 
