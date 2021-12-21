@@ -23,4 +23,6 @@ nfcore-sarek-2.7.1.img
 
 Example samplesheet for sarek (no header required): sarek_samplesheet_example.tsv
 
-Example samplesheet for dmvar (header required): dmvar_samplesheet_example.csv
+Example samplesheet VCF for dmvar (header required): dmvar_samplesheet_example.csv
+
+Parents should have 'None' in chromosome, type and control columns
