@@ -19,9 +19,9 @@ nfcore-sarek-2.7.1.img
 
 3. Run python script to identify variants of interest in Excel files per parental control
 
-N.b. This incorporates remove_parental2.py and currently has hard coded paths and hidden requirements!
+N.b. This incorporates remove_parental2.py and currently has a hidden requirement for bcftools and python imports subprocess, pandas and openpyxl! Genesummary data is also not optional, but should be made so.
 
-`python dmvar_results.py ../NVS024_vcf_samplesheet.csv snps_filtered_pass.vcf.snpeff.vcf`
+`python ~/code_development/dmvar/dmvar_results.py -g ~/code_development/dmvar/automated_gene_summaries.tsv ../NVS024_vcf_samplesheet.csv -r ~/code_development/dmvar/remove_parental2.py -v snps_filtered_pass.vcf.snpeff.vcf`
 
 ## Samplesheets
 
