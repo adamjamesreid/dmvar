@@ -29,4 +29,4 @@ Example samplesheet for sarek (no header required): `sarek_samplesheet_example.t
 
 Example samplesheet VCF for dmvar (header required): `dmvar_samplesheet_example.csv`
 
-- Parents should have 'None' in chromosome, type and control columns
+- Parents should have 'None' in *chromosome*, *type* and *control* columns
