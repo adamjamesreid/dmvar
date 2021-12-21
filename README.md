@@ -25,8 +25,8 @@ N.b. This incorporates remove_parental2.py and currently has a hidden requiremen
 
 ## Samplesheets
 
-Example samplesheet for sarek (no header required): sarek_samplesheet_example.tsv
+Example samplesheet for sarek (no header required): `sarek_samplesheet_example.tsv`
 
-Example samplesheet VCF for dmvar (header required): dmvar_samplesheet_example.csv
+Example samplesheet VCF for dmvar (header required): `dmvar_samplesheet_example.csv`
 
-Parents should have 'None' in chromosome, type and control columns
+- Parents should have 'None' in chromosome, type and control columns
