@@ -1,6 +1,13 @@
 # dmvar
 Identify DNA sequence variants in Drosophila mutant lines
 
+The key thing this pipeline introduces is the identification of variants which are novel in a particular mutant fly line compared to the parent and other progeny of that parent (the cohort). Depending on the line the variants are filtered to those which are heterozygous (when balanced due to lethality) or homozygous, as specified in the samplesheet. The location of variants of interest is specified by chromosome or chromosome arm, again in the samplesheet.
+
+Input - nf-core/sarek samplesheet, fastq files
+
+Output - Excel files of filtered variants per cohort, per mutant (plus combined, genotyped GVCF and VCFs of filtered SNPs and indels)
+
+
 ## Requires nf-core singularity images
 
 depot.galaxyproject.org-singularity-snpeff-5.0--hdfd78af_1.img
