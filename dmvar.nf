@@ -79,6 +79,8 @@ process combineGVCFs {
 }
 
 process genotypeGCVFs {
+    publishDir params.outdir, mode:'copy'
+
     input:
     path ref from ref_ch
     path fai from fai_ch

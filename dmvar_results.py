@@ -9,9 +9,33 @@ import sys
 import subprocess
 import pandas as pd
 import openpyxl
+import argparse
 
-ss_file = sys.argv[1]
-vcf_file = sys.argv[2]
+parser = argparse.ArgumentParser(description='Idenitify variants of interest from Drosophila mutatation experiments')
+parser.add_argument('-g', '--genesummary', help="File downloaded from Flybase with detailed info about each gene")
+parser.add_argument('-s', '--samplesheet', help="Samplesheet with header 'sample,chromosome,type,control,batch,vcf'")
+parser.add_argument('-r', '--remove_parental_script', help="Path to remove_parental2.py script")
+parser.add_argument('-v', '--vcf_file', help="VCF file of variants from dmvar.nf pipeline - including all samples in samplesheet")
+args = parser.parse_args()
+
+if args.samplesheet:
+    ss_file = args.samplesheet
+else:
+    print("Please provide a samplesheet (-s)")
+    exit()
+if args.genesummary:
+    genesummary_file = args.genesummary
+if args.remove_parental_script:
+    remove_parental_script = args.remove_parental_script
+else:
+    print("Please provide a path to the remove_parental2.py script (-r)")
+    exit()
+if args.vcf_file:
+    vcf_file = args.vcf_file
+else:
+    print("Please provide a VCF file of variants from dmvar.nf pipeline (-v)")
+    exit()
+
 
 # list of parents
 # dict of parent -> progeny
@@ -36,10 +60,6 @@ with open(ss_file) as ss:
                 details[v[0]] = tuple()
             details[v[0]] = (v[1], v[2])
 
-#print(progeny)
-
-#print(details)
-
 for parent in progeny:
     cohort_vcf_file = vcf_file+'.'+parent+'.vcf'
     cohort_hom_variants_file = vcf_file+'.'+parent+'.homs.txt'
@@ -49,14 +69,13 @@ for parent in progeny:
     print(cmd)
     returned_value = subprocess.call(cmd, shell=True)
 
-    cmd = "python ~/code_development/dmvar/remove_parental2.py -p {} -o {}_cohortfilt_snps_homs.vcf -a 2 -g ~/code_development/dmvar/automated_gene_summaries.tsv -f HIGH,MODERATE {} > {}".format(parent, parent, cohort_vcf_file, cohort_hom_variants_file)
+    cmd = "python ~/code_development/dmvar/remove_parental2.py -p {} -o {}_cohortfilt_snps_homs.vcf -a 2 -g {} -f HIGH,MODERATE {} > {}".format(parent, parent, genesummary_file, cohort_vcf_file, cohort_hom_variants_file)
     print(cmd)
     returned_value = subprocess.call(cmd, shell=True)
 
-    cmd = "python ~/code_development/dmvar/remove_parental2.py -p {} -o {}_cohortfilt_snps_homs.vcf -a 1 -g ~/code_development/dmvar/automated_gene_summaries.tsv -f HIGH,MODERATE {} > {}".format(parent, parent, cohort_vcf_file, cohort_het_variants_file)
+    cmd = "python ~/code_development/dmvar/remove_parental2.py -p {} -o {}_cohortfilt_snps_homs.vcf -a 1 -g {} -f HIGH,MODERATE {} > {}".format(parent, parent, genesummary_file, cohort_vcf_file, cohort_het_variants_file)
     print(cmd)
     returned_value = subprocess.call(cmd, shell=True)
-    #python ~/code_development/dmvar/remove_parental2.py -p Actrl -o Actrl_cohortfilt_snps_homs.vcf -a 2 -g ~/code_development/dmvar/automated_gene_summaries.tsv -f HIGH,MODERATE snps_filtered_pass.vcf.snpeff.Actrl.vcf  > Actrl_cohortfilt_snps_homs.txt
 
     # Declare a spreadsheet output for this cohort
     excel_file = parent + '.xlsx'
@@ -73,7 +92,7 @@ for parent in progeny:
         elif details[prog][1] == 'Homozygous':
             file_to_open = cohort_hom_variants_file
         else:
-            print("Not a valid analysis type, should be Heterozygous or Homogygous: {}".format(details[prog][1]))
+            print("Not a valid analysis type, should be Heterozygous or Homogygous: {} {}".format(prog, details[prog][1]))
             exit()
 
         with open(file_to_open) as hethom_file:
