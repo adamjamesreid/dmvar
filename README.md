@@ -7,6 +7,9 @@ Input - nf-core/sarek samplesheet, dmvar VCF samplesheet, fastq files
 
 Output - Excel files of filtered variants per cohort, per mutant (plus combined, genotyped GVCF and VCFs of filtered SNPs and indels)
 
+Variants are considered only if they are homozygous in the parent and either homozygous (but non-parental) in a single progeny line or heterozygous alt in a single progeny line
+
+
 
 ## Requires nf-core singularity images
 
