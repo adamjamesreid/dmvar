@@ -33,7 +33,7 @@ n.b. should be possible to do this just with nfcore-sarek-2.7.1.img - which now 
 
 N.b. This requires bcftools and python imports subprocess, pandas and openpyxl
 
-`python ~/code_development/dmvar/dmvar_results.py -g ~/code_development/dmvar/automated_gene_summaries.tsv ../NVS024_vcf_samplesheet.csv -r ~/code_development/dmvar/remove_parental2.py -v snps_filtered_pass.vcf.snpeff.vcf`
+`python ~/code_development/dmvar/dmvar_results.py -s ../NVS024_vcf_samplesheet.csv -v NVS024_snps_indels_filtered_pass.vcf.snpeff.vcf.gz -f HIGH,MODERATE -g ~/code_development/dmvar/automated_gene_summaries.tsv -m gene_map_table_fb_2021_06.tsv.gz`
 
 ## Samplesheets
 
