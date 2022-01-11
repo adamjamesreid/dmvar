@@ -17,8 +17,6 @@ depot.galaxyproject.org-singularity-snpeff-5.0--hdfd78af_1.img
 
 nfcore-sarek-2.7.1.img
 
-n.b. should be possible to do this just with nfcore-sarek-2.7.1.img - which now seems to have snpEff - but not how it is currently coded
-
 ## Running dmvar
 
 1. Run nf-core/sarek to get GVCFs per sample 
@@ -27,7 +25,7 @@ n.b. should be possible to do this just with nfcore-sarek-2.7.1.img - which now 
 
 2. Run dmvar nextflow script to combine GVCFs, call variants, filter and annotate them
 
-`nextflow run dmvar.nf -c gurdon.config -c nextflow.config -with-singularity nfcore-sarek-2.7.1.img --ss <dmvar_samplesheet> --ref dm6.fa --dict dm6.dict --fai dm6.fa.fai --snpeff_ref BDGP6.28.99 --outdir dmvar_outdir`
+`nextflow run dmvar.nf -c gurdon.config -with-singularity nfcore-sarek-2.7.1.img --ss <dmvar_samplesheet> --ref dm6.fa --dict dm6.dict --fai dm6.fa.fai --snpeff_ref BDGP6.28.99 --outdir dmvar_outdir`
 
 3. Run python script to generate variants of interest in Excel files per parental control
 
