@@ -7,23 +7,15 @@ Input - REQUIRED: nf-core/sarek samplesheet, dmvar VCF samplesheet, fastq files
 
 OPTIONAL: Gene summary file (e.g. http://ftp.flybase.org/releases/FB2021_06/precomputed_files/genes/automated_gene_summaries.tsv.gz), gene map file (e.g. http://ftp.flybase.org/releases/FB2021_06/precomputed_files/genes/gene_map_table_fb_2021_06.tsv.gz)
 
-
-
-
-
 Output - Excel files of filtered variants per cohort, per mutant (plus combined, genotyped GVCF and VCFs of filtered SNPs and indels)
 
 Variants are considered only if they are homozygous in the parent and either homozygous (but non-parental) in a single progeny line or heterozygous alt in a single progeny line
-
-
 
 ## Requires nf-core singularity images
 
 depot.galaxyproject.org-singularity-snpeff-5.0--hdfd78af_1.img
 
 nfcore-sarek-2.7.1.img
-
-n.b. should be possible to do this just with nfcore-sarek-2.7.1.img - which now seems to have snpEff - but not how it is currently coded
 
 ## Running dmvar
 
@@ -33,13 +25,13 @@ n.b. should be possible to do this just with nfcore-sarek-2.7.1.img - which now 
 
 2. Run dmvar nextflow script to combine GVCFs, call variants, filter and annotate them
 
-`nextflow run dmvar.nf -c gurdon.config -c nextflow.config -with-singularity nfcore-sarek-2.7.1.img --ss <dmvar_samplesheet> --ref dm6.fa --dict dm6.dict --fai dm6.fa.fai --snpeff_ref BDGP6.28.99 --outdir dmvar_outdir`
+`nextflow run dmvar.nf -c gurdon.config -with-singularity nfcore-sarek-2.7.1.img --ss <dmvar_samplesheet> --ref dm6.fa --dict dm6.dict --fai dm6.fa.fai --snpeff_ref BDGP6.28.99 --outdir dmvar_outdir`
 
-3. Run python script to identify variants of interest in Excel files per parental control
+3. Run python script to generate variants of interest in Excel files per parental control
 
-N.b. This incorporates remove_parental2.py and currently has a hidden requirement for bcftools and python imports subprocess, pandas and openpyxl! Genesummary data is also not optional, but should be made so.
+N.b. This requires bcftools and python imports subprocess, pandas and openpyxl
 
-`python ~/code_development/dmvar/dmvar_results.py -g ~/code_development/dmvar/automated_gene_summaries.tsv ../NVS024_vcf_samplesheet.csv -r ~/code_development/dmvar/remove_parental2.py -v snps_filtered_pass.vcf.snpeff.vcf`
+`python ~/code_development/dmvar/dmvar_results.py -s ../NVS024_vcf_samplesheet.csv -v NVS024_snps_indels_filtered_pass.vcf.snpeff.vcf.gz -f HIGH,MODERATE -g ~/code_development/dmvar/automated_gene_summaries.tsv -m gene_map_table_fb_2021_06.tsv.gz`
 
 ## Samplesheets
 
@@ -48,3 +40,9 @@ Example samplesheet for sarek (no header required): `sarek_samplesheet_example.t
 Example samplesheet VCF for dmvar (header required): `dmvar_samplesheet_example.csv`
 
 - Parents should have 'None' in *chromosome*, *type* and *control* columns
+
+## Accessory files
+
+gene_map_table_fb_2021_06.tsv.gz - File downloaded from Flybase describing the locations of genes. Used to annotate the results
+
+automated_gene_summaries.tsv - File downloaded from Flybase describing known functions etc. of genes. Used to annotate the results
