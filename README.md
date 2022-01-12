@@ -11,12 +11,6 @@ Output - Excel files of filtered variants per cohort, per mutant (plus combined,
 
 Variants are considered only if they are homozygous in the parent and either homozygous (but non-parental) in a single progeny line or heterozygous alt in a single progeny line
 
-## Requires nf-core singularity images
-
-depot.galaxyproject.org-singularity-snpeff-5.0--hdfd78af_1.img (nfcore-sarek-2.7.1.img contains an earlier version of snpEff which is not compatible)
-
-nfcore-sarek-2.7.1.img
-
 ## Running dmvar
 
 1. Run nf-core/sarek to get GVCFs per sample 
@@ -46,3 +40,16 @@ Example samplesheet VCF for dmvar (header required): `dmvar_samplesheet_example.
 gene_map_table_fb_2021_06.tsv.gz - File downloaded from Flybase describing the locations of genes. Used to annotate the results
 
 automated_gene_summaries.tsv - File downloaded from Flybase describing known functions etc. of genes. Used to annotate the results
+
+
+## Requires nf-core singularity images
+
+depot.galaxyproject.org-singularity-snpeff-5.0--hdfd78af_1.img (nfcore-sarek-2.7.1.img contains an earlier version of snpEff which is not compatible)
+
+nfcore-sarek-2.7.1.img
+
+## Config files
+
+nextflow.config - indicates that Nextflow should use the snpeff Singularity image to run the annotate_variants process (will need to be edited for other systems)
+
+gurdon.config - describes how nextflow should run through Slurm on the Gurdon cluster 
