@@ -417,9 +417,9 @@ for parent in progeny:
     for prog in progeny[parent]:
         # get lines of file relating to relevant progeny, het/hom and chromosome
         if details[prog][1] == 'Heterozygous':
-            prog_res_list = select_results(cohort_het_variants_file, prog, details[prog][0])
+            prog_res_list = select_results(cohort_het_variants_file, prog, 'chr'+details[prog][0])
         elif details[prog][1] == 'Homozygous':
-            prog_res_list = select_results(cohort_hom_variants_file, prog, details[prog][0])
+            prog_res_list = select_results(cohort_hom_variants_file, prog, 'chr'+details[prog][0])
         else:
             print("Not a valid analysis type, should be Heterozygous or Homogygous: {} {}".format(prog, details[prog][1]))
             exit()

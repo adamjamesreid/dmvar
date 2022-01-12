@@ -78,7 +78,7 @@ process combineGVCFs {
     """
 }
 
-process genotypeGCVFs {
+process genotypeGVCFs {
     publishDir params.outdir, mode:'copy'
 
     input:
@@ -161,10 +161,49 @@ process annotate_variants {
     path vcf from snps_filt_ch.mix(indels_filt_ch) // Mix snps and indel channels together
 
     output:
-    path "${vcf}.snpeff.vcf" into snp_ann_vcf_ch
+    path "${vcf}.snpeff.vcf" into ann_vcf_ch
+    //path "${vcf}.snpeff.vcf.gz.tbi" into ann_vcf_ch_index
 
     script:
     """
     snpEff ann ${params.snpeff_ref} -dataDir /tmp/snpEff $vcf > "${vcf}.snpeff.vcf"
+    #bgzip ${vcf}.snpeff.vcf
+    #tabix -o vcf ${vcf}.snpeff.vcf.gz
+    """
+}
+
+//zip and index annotated VCFs
+process index_vcf
+{
+    publishDir params.outdir, mode:'copy'
+
+    input:
+    path ann_vcf from ann_vcf_ch
+
+    output:
+    path "${ann_vcf}.gz" into ann_vcf_zip_ch
+    path "${ann_vcf}.gz.tbi" into ann_vcf_ch_index
+
+    script:
+    """
+    bgzip $ann_vcf
+    tabix -p vcf ${ann_vcf}.gz
+    """
+}
+
+//Combine SNP and Indel VCFs
+process combine_variants {
+    publishDir params.outdir, mode:'copy'
+
+    input:
+    path ann_vcf from ann_vcf_zip_ch.collect()
+    path ann_vcf_index from ann_vcf_ch_index.collect()
+
+    output:
+    path "combined_filtered_pass.vcf.snpeff.vcf.gz" into comb_ann_vcf_ch
+    
+    script:
+    """
+    bcftools concat -a -o combined_filtered_pass.vcf.snpeff.vcf.gz -O z ${ann_vcf.join(' ')}
     """
 }
