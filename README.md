@@ -13,7 +13,7 @@ Variants are considered only if they are homozygous in the parent and either hom
 
 ## Requires nf-core singularity images
 
-depot.galaxyproject.org-singularity-snpeff-5.0--hdfd78af_1.img
+depot.galaxyproject.org-singularity-snpeff-5.0--hdfd78af_1.img (nfcore-sarek-2.7.1.img contains an earlier version of snpEff which is not compatible)
 
 nfcore-sarek-2.7.1.img
 
