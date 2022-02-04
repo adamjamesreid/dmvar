@@ -237,6 +237,14 @@ def function_effect(info, effects):
                 out_list.append(gene)
             else:
                 out_list.append("")
+        elif 'LOW' in func_vals:
+            out_list.append('\t'.join(func_vals['LOW'][0]))
+
+            gene = func_vals['LOW'][0][4]
+            if gene:
+                out_list.append(gene)
+            else:
+                out_list.append("")
 
         return out_list
 
@@ -425,7 +433,10 @@ for parent in progeny:
             exit()
         
         # Write out Excel sheet
-        df = pd.DataFrame(prog_res_list, columns=['Sample','Chromosome','Position', 'Alt allele', 'Mutation type', 'Mutation effect', 'Gene', 'FB gene id', 'NT change', 'AA change', 'Gene location', 'Gene description'])
+        if args.funcfilter:
+            df = pd.DataFrame(prog_res_list, columns=['Sample','Chromosome','Position', 'Alt allele', 'Mutation type', 'Mutation effect', 'Gene', 'FB gene id', 'NT change', 'AA change', 'Gene location', 'Gene description'])
+        else:
+            df = pd.DataFrame(prog_res_list, columns=['Sample','Chromosome','Position'])
         df.to_excel(writer, index=False, sheet_name=prog+'_'+details[prog][0]+'_'+details[prog][1])
 
     writer.save()
