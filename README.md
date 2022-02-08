@@ -34,6 +34,7 @@ Example samplesheet for sarek (no header required): `sarek_samplesheet_example.t
 Example samplesheet VCF for dmvar (header required): `dmvar_samplesheet_example.csv`
 
 - Parents should have 'None' in *chromosome*, *type* and *control* columns
+- *chromosome* can be a stem e.g. chr2 will result in variants from chr2L and chr2R being included (this makes sense for Drosophila, but might not for other genomes)
 
 ## Accessory files
 
