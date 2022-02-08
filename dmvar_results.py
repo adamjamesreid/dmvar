@@ -17,7 +17,8 @@
 # imports
 import sys
 import subprocess
-import pandas as pd
+#import ExcelWriter, DataFrame from pandas
+from pandas import ExcelWriter, DataFrame
 import openpyxl
 import argparse
 import re
@@ -162,25 +163,25 @@ def single_progeny_hom(sample_calls, parent):
     else:
         return None
 
-def parse_function(info, effects):
+def parse_function(info):
     ''' Given an info line, presumably tagged by snpeff, identify ANN records and return gene name, mutation type etc'''
     ''' 'effects' can contain (HIGH, MODERATE, LOW, MODIFIER)'''
     return_data = dict()
     fields = info.split(';')
-    #print(fields, "\n")
+
     for f in fields:
         if f.startswith('ANN='):
             f = f.replace('ANN=', '')
             anns = f.split(',')
             anns_join = "\n".join(anns)
-            #print(anns_join, "\n")
+
             for a in anns:
                 abits = a.split('|')
                 if abits[2] not in return_data:
                     return_data[abits[2]] = list()
                 index_names = [0,1,2,3,4,9,10]
                 return_data[abits[2]].append([abits[val] for val in index_names])
-    #print(return_data,"\n")
+
     return return_data
 
 def read_gene_summary(fn):
@@ -209,47 +210,42 @@ def read_genemap(fn):
             info[v[2]] = v[5]
     return info
 
-def function_effect(info, effects):
-    '''Determine what kind of effect the variant has'''
+def function_effect(info):
+    '''
+    Determine the most serious kind of effect the variant has
+    Return the seriousness of the effect and the details
+    '''
     # Use parse_function list to get a dictionary of effect type to lists of effect details
-    func_vals = parse_function(info, effects)
+    func_vals = parse_function(info)
 
     # Return is a list of effect summary data
     out_list = list()
 
     if func_vals:
+        effect_type = ''
         if 'HIGH' in func_vals:
-            out_list.append('\t'.join(func_vals['HIGH'][0]))
-            
-            # Determine gene name if any
-            gene = func_vals['HIGH'][0][4]
-            if gene:
-                out_list.append(gene)
-            else:
-                out_list.append("")
-
-            return out_list
+            effect_type = 'HIGH'
         elif 'MODERATE' in func_vals:
-            out_list.append('\t'.join(func_vals['MODERATE'][0]))
-
-            gene = func_vals['MODERATE'][0][4]
-            if gene:
-                out_list.append(gene)
-            else:
-                out_list.append("")
+            effect_type = 'MODERATE'
         elif 'LOW' in func_vals:
-            out_list.append('\t'.join(func_vals['LOW'][0]))
+            effect_type = 'LOW'
+        elif 'MODIFIER' in func_vals:
+            effect_type = 'MODIFIER'
+        else:
+            sys.stderr.write('No effect type. SnpEff annotation missing? {}'.format(info))
 
-            gene = func_vals['LOW'][0][4]
-            if gene:
-                out_list.append(gene)
-            else:
-                out_list.append("")
+        out_list.append('\t'.join(func_vals[effect_type][0]))
+            
+        # Determine gene name if any
+        gene = func_vals[effect_type][0][4]
+        if gene:
+            out_list.append(gene)
+        else:
+            out_list.append("")
 
-        return out_list
-
+        return (effect_type, out_list)
     else:
-        return None
+        return (None, None)
     
 
 def select_results(f, prog, chrom):
@@ -361,21 +357,19 @@ for parent in progeny:
                 out_line = ''
                 genesummary_text = ''
                 genelocus_text = ''
-                if args.funcfilter:
-                    # parse function - pass annotatation field from VCF and comma-sep list of effects accepted e.g. 'HIGH,MODERATE'
-                    effect = function_effect(x[7], funcfilter)
-                    if effect:
-                        if effect[1] and args.genesummary and effect[1] in genesummary:
-                            genesummary_text = genesummary[effect[1]]
-                        if effect[1] and args.genemapfile and effect[1] in genemap:
-                            genelocus_text = genemap[effect[1]]
+                # Alternative here to parse function effect first, see what we get back and whether that is in the filter
+                #if args.funcfilter:
+                # parse function - pass annotatation field from VCF and comma-sep list of effects accepted e.g. 'HIGH,MODERATE'
+                (effect_type, effect) = function_effect(x[7])
+                # Continue with the variant if the most serious effect type found is in the supplied list, or if there is no funcfilter
+                if not args.funcfilter or effect_type in funcfilter:
+                    if effect[1] and args.genesummary and effect[1] in genesummary:
+                        genesummary_text = genesummary[effect[1]]
+                    if effect[1] and args.genemapfile and effect[1] in genemap:
+                        genelocus_text = genemap[effect[1]]
 
-                        out_line = '\t'.join([p, chrom, pos, effect[0], genelocus_text, genesummary_text])
-                else:
-                    filler = ("" * 10).join('\t')
-                    out_line = '\t'.join([p, chrom, pos, filler])
+                    out_line = '\t'.join([p, chrom, pos, effect[0], genelocus_text, genesummary_text])
                 
-                if out_line:
                     hetout.write('{}\n'.format(out_line))
 
                 # write out VCF line
@@ -388,21 +382,17 @@ for parent in progeny:
                     out_line = ''
                     genesummary_text = ''
                     genelocus_text = ''
-                    if args.funcfilter:
-                        # parse function (n.b. effect[1] is the gene name)
-                        effect = function_effect(x[7], funcfilter)
-                        if effect:
-                            if effect[1] and args.genesummary and effect[1] in genesummary:
-                                genesummary_text = genesummary[effect[1]]
-                            if effect[1] and args.genemapfile and effect[1] in genemap:
-                                genelocus_text = genemap[effect[1]]
+                    # parse function (n.b. effect[1] is the gene name)
+                    (effect_type, effect) = function_effect(x[7])
+                    #if effect_type in funcfilter or not args.funcfilter:
+                    if not args.funcfilter or effect_type in funcfilter:
+                        if effect[1] and args.genesummary and effect[1] in genesummary:
+                            genesummary_text = genesummary[effect[1]]
+                        if effect[1] and args.genemapfile and effect[1] in genemap:
+                            genelocus_text = genemap[effect[1]]
 
-                            out_line = '\t'.join([p, chrom, pos, effect[0], genelocus_text, genesummary_text])
-                    else:
-                        filler = ("" * 10).join('\t')
-                        out_line = '\t'.join([p, chrom, pos, filler])
+                        out_line = '\t'.join([p, chrom, pos, effect[0], genelocus_text, genesummary_text])
                         
-                    if out_line:
                         homout.write('{}\n'.format(out_line))
 
                     # write out VCF line
@@ -419,24 +409,28 @@ for parent in progeny:
             
     # Initialise spreadsheet for this cohort
     excel_file = parent + '.xlsx'
-    writer = pd.ExcelWriter(excel_file)
+    writer = ExcelWriter(excel_file)
 
     # for each progeny - get relevant variants from file
     for prog in progeny[parent]:
         # get lines of file relating to relevant progeny, het/hom and chromosome
         if details[prog][1] == 'Heterozygous':
-            prog_res_list = select_results(cohort_het_variants_file, prog, 'chr'+details[prog][0])
+            prog_res_list = select_results(cohort_het_variants_file, prog, details[prog][0])
         elif details[prog][1] == 'Homozygous':
-            prog_res_list = select_results(cohort_hom_variants_file, prog, 'chr'+details[prog][0])
+            prog_res_list = select_results(cohort_hom_variants_file, prog, details[prog][0])
         else:
             print("Not a valid analysis type, should be Heterozygous or Homogygous: {} {}".format(prog, details[prog][1]))
             exit()
         
         # Write out Excel sheet
-        if args.funcfilter:
-            df = pd.DataFrame(prog_res_list, columns=['Sample','Chromosome','Position', 'Alt allele', 'Mutation type', 'Mutation effect', 'Gene', 'FB gene id', 'NT change', 'AA change', 'Gene location', 'Gene description'])
-        else:
-            df = pd.DataFrame(prog_res_list, columns=['Sample','Chromosome','Position'])
-        df.to_excel(writer, index=False, sheet_name=prog+'_'+details[prog][0]+'_'+details[prog][1])
+        #if args.funcfilter:
+        df = DataFrame(prog_res_list, columns=['Sample','Chromosome','Position', 'Alt allele', 'Mutation type', 'Mutation effect', 'Gene', 'FB gene id', 'NT change', 'AA change', 'Gene location', 'Gene description'])
+        #else:
+        #    df = DataFrame(prog_res_list, columns=['Sample','Chromosome','Position'])
+        sheet_name = prog+'_'+details[prog][0]+'_'+details[prog][1]
+        df.to_excel(writer, index=False, sheet_name=sheet_name)
+
+        # Output each mutant to a tsv file as well as to Excel
+        df.to_csv(sheet_name+'.tsv', sep='\t', index=False)
 
     writer.save()
