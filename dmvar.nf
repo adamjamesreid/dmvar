@@ -162,7 +162,7 @@ process annotate_variants {
 
     output:
     path "${vcf}.snpeff.vcf" into ann_vcf_ch
-    //path "${vcf}.snpeff.vcf.gz.tbi" into ann_vcf_ch_index
+    path "${vcf}.snpeff.vcf.gz.tbi" into ann_vcf_ch_index
 
     script:
     """
