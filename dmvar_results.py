@@ -105,6 +105,34 @@ def is_hom (gt):
     else:
         return False
 
+def is_hom_fuzzy(gt, af, min_hom_allele_freq):
+    ''' Is this genotype homozygous? It can have been called as het, but as long as the frequency of the alternative allele is >= min_hom_allele_freq we will call it homozygous anyway '''
+    # If min_hom_allele_freq == False, do a normal is_hom call
+    if min_hom_allele_freq == False:
+        print("Run is_hom")
+        return is_hom(gt)
+    # If it is a het, check allele frequencies, return true if alternative allele frequency is high enough
+    elif is_het(gt):
+        allele_freqs = af.split(',')
+        # Determine total depth over this variant to check that it is not zero
+        depth_sum = sum([float(x) for x in allele_freqs])
+        
+        if depth_sum > 0:
+            # frequency of alternate allele, assuming a single alternate
+            alt_freq = float(allele_freqs[1]) / (sum([float(x) for x in allele_freqs]))
+        else:
+            return False
+
+        print ("{} {} {} {}".format(gt, af, alt_freq, min_hom_allele_freq))
+        if alt_freq >= min_hom_allele_freq:
+            print ("True")
+            return True
+        else:
+            return False
+    # Otherwise return False
+    else:
+        return False
+
 def single_progeny_het(sample_calls, parent):
     ''' Determine whether a single progeny is heterozygous, while others are homogygous '''
     hets = 0
@@ -118,6 +146,19 @@ def single_progeny_het(sample_calls, parent):
         return progeny_to_return
     else:
         return None
+
+def single_progeny_het_fuzzy(sample_calls, parent, max_shared):
+    ''' Determine whether a subset of progeny are heterozygous for a particular variant - alternative to single_progeny_het'''
+    het_progeny = list()
+    for s in sample_calls:
+        if s != parent:
+            if(is_het(sample_calls[s])):
+                het_progeny.append(s)
+    if len(het_progeny) <= (int(max_shared) + 1):
+        return het_progeny
+    else:
+        return None
+
 
 def is_het(gt):
     alleles = re.split('[|/]', gt)
@@ -140,6 +181,7 @@ def single_progeny_hom(sample_calls, parent):
         p_gt = '0'
     elif p_alleles[0] == '1' and p_alleles[1] == '1':
         p_gt = '1'
+    # Return None if parent is heterozygous
     else:
         return None
 
@@ -162,6 +204,67 @@ def single_progeny_hom(sample_calls, parent):
         return hom_np_samples[0]
     else:
         return None
+
+def single_progeny_hom_fuzzy(sample_calls, sample_freqs, parent, max_shared, min_hom_allele_freq):
+    ''' Alternative funciton to single_progeny_hom which allows heterozygous calls with alternative allele freq >= min_allele_freq 
+    to be called as homozygous
+    '''
+
+    print("Running single_progeny_hom_fuzzy {} {} {}".format(parent, max_shared, min_hom_allele_freq))
+
+    # Determine if parent is homozygous and alt or ref
+    p_alleles = re.split('[|/]', sample_calls[parent])
+    p_gt = '0'
+    if p_alleles[0] == '0' and p_alleles[1] == '0':
+        p_gt = '0'
+    elif p_alleles[0] == '1' and p_alleles[1] == '1':
+        p_gt = '1'
+    # Return None if parent is heterozygous
+    else:
+        print("Parent is heterozygous")
+        return None
+
+    res_dict = {"hom_p" : 0, "hom_np" : 0, "het" : 0}
+    hom_np_samples = list()
+
+    # Go through calls 
+    for s in sample_calls:
+        if s != parent:
+            s_alleles = re.split('[|/]', sample_calls[s])
+            # If this is a heterozygous call
+            if s_alleles[0] != s_alleles[1] and '.' not in s_alleles: # Het call
+                print("Looks like a het {} {}".format(s_alleles[0], s_alleles[1]))
+                # if this is a fuzzy homozygote
+                if is_hom_fuzzy(sample_calls[s], sample_freqs[s], min_hom_allele_freq):
+                    print("is_hom_fuzzy")
+                    # if the fuzzy homozygote is not the parental genotype
+                    if s_alleles[1] != p_gt:
+                        res_dict['hom_np'] = res_dict['hom_np'] + 1
+                        hom_np_samples.append(s)
+                    # It is a homozygous parental genotype
+                    else:
+                        res_dict['hom_p'] = res_dict['hom_p'] + 1
+                # It is not a fuzzy hom, so it is a het
+                else:
+                    print("not a fuzzy hom, but a het")
+                    res_dict['het'] = res_dict['het'] + 1
+            # Homozygous, parental genotype
+            elif s_alleles[0] == s_alleles[1] and '.' not in s_alleles and s_alleles[0] == p_gt: # Hom parental call
+                res_dict['hom_p'] = res_dict['hom_p'] + 1
+            # Homozygous alternative
+            elif s_alleles[0] == s_alleles[1] and '.' not in s_alleles and s_alleles[0] != p_gt: # Hom alternate call
+                res_dict['hom_np'] = res_dict['hom_np'] + 1
+                hom_np_samples.append(s)
+    
+    # If the number of homozygous nonparentals is gt 0 (i.e. we have at least one interesting variant and the number of hets and hom_nps is not more than the max_shared+1, return them 
+    print("res_dict {}".format(res_dict))
+    if res_dict['hom_np'] > 0 and ((res_dict['hom_np'] + res_dict['het']) <= (max_shared + 1)):
+        print("Return 1 : {}".format(hom_np_samples))
+        return hom_np_samples
+    else:
+        print("Return 0 : {}".format(hom_np_samples))
+        return None
+
 
 def parse_function(info):
     ''' Given an info line, presumably tagged by snpeff, identify ANN records and return gene name, mutation type etc'''
@@ -274,6 +377,8 @@ parser.add_argument('-m', '--genemapfile', help="Gene map file from Flybase with
 parser.add_argument('-s', '--samplesheet', help="Samplesheet with header 'sample,chromosome,type,control,batch,vcf'")
 parser.add_argument('-v', '--vcf_file', help="VCF file of variants from dmvar.nf pipeline - including all samples in samplesheet")
 parser.add_argument('-f', '--funcfilter', help="Include only SNPs with annotations labelled as one or more of HIGH, MODERATE, LOW, MODIFIER - comma separated list")
+parser.add_argument('--maxshared', help="How many siblings can share an alternative allele and still be called [0]")
+parser.add_argument('-a', '--minhomfreq', help="Turn on fuzzy homozygous calling and set minimum alternative allele frequency to call a homozygote [None]")
 args = parser.parse_args()
 
 ###################
@@ -295,6 +400,15 @@ else:
     exit()
 if args.funcfilter:
     funcfilter = args.funcfilter.split(',')
+if args.maxshared:
+    max_shared = int(args.maxshared)
+else:
+    max_shared = 0
+if args.minhomfreq:
+    min_hom_allele_freq = float(args.minhomfreq)
+else:
+    min_hom_allele_freq = False
+
 
 
 #################
@@ -322,12 +436,12 @@ for parent in progeny:
     # Define homozygous results file
     cohort_hom_variants_file = vcf_file+'.'+parent+'.hom.txt'
     homout = open(cohort_hom_variants_file, 'w')
-    homout.write("Sample\tChromosome\tPosition\tAlt allele\tMutation type\tMutation effect\tGene\tFB gene id\tNT change\tAA change\tGene location\tGene description\n")
+    homout.write("Sample\tChromosome\tPosition\tAlt allele\tMutation type\tMutation effect\tGene\tFB gene id\tNT change\tAA change\tShared_with\tGene location\tGene description\n")
 
     # Define heterozygous results file
     cohort_het_variants_file = vcf_file+'.'+parent+'.het.txt'
     hetout = open(cohort_het_variants_file, 'w')
-    hetout.write("Sample\tChromosome\tPosition\tAlt allele\tMutation type\tMutation effect\tGene\tFB gene id\tNT change\tAA change\tGene location\tGene description\n")
+    hetout.write("Sample\tChromosome\tPosition\tAlt allele\tMutation type\tMutation effect\tGene\tFB gene id\tNT change\tAA change\tShared with\tGene location\tGene description\n")
     
     # bcftools to subset vcf to cohort
     cmd = "which bcftools; bcftools -v;bcftools view -s {},{} {} > {}".format(','.join(progeny[parent]), parent, vcf_file, cohort_vcf_file)
@@ -346,13 +460,18 @@ for parent in progeny:
         # Get genotypes for each sample
         genotypes = [s.split(':')[0] for s in x[9:]]
 
+        # Get allele_freqs
+        allele_freqs = [s.split(':')[1] for s in x[9:]]
+
         # Make a dict of sample->genotype
         sample_calls = dict(zip(samples, genotypes))
+        # Make a dict of sample->allele freq
+        sample_freqs = dict(zip(samples, allele_freqs))
 
         # If parent is homozygous (otherwise we are not interested)
         if is_hom(sample_calls[parent]):
-            # is there a single progeny with a heterozygous non-parental call?
-            p = single_progeny_het(sample_calls, parent)
+            # is there a single (or max_shared) progeny with a heterozygous non-parental call?
+            p = single_progeny_het_fuzzy(sample_calls, parent, max_shared)
             if p:
                 out_line = ''
                 genesummary_text = ''
@@ -368,36 +487,52 @@ for parent in progeny:
                     if effect[1] and args.genemapfile and effect[1] in genemap:
                         genelocus_text = genemap[effect[1]]
 
-                    out_line = '\t'.join([p, chrom, pos, effect[0], genelocus_text, genesummary_text])
-                
-                    hetout.write('{}\n'.format(out_line))
+                    # Determine how many progeny share this variant
+                    if len(p) > 1:
+                        shared_with = len(p) - 1
+                    else:
+                        shared_with = 0
+
+                    # Loop through return progeny and write out variants
+                    for i in p:
+                        out_line = '\t'.join([i, chrom, pos, effect[0], str(shared_with), genelocus_text, genesummary_text])
+                        hetout.write('{}\n'.format(out_line))
 
                 # write out VCF line
                 vcf_line = "\t".join(x)
                 hetout_vcf.write('{}\n'.format(vcf_line))
-            # is there a single progeny with a homozygous non-parental call?
-            else:
-                p = single_progeny_hom(sample_calls, parent)
-                if p:
-                    out_line = ''
-                    genesummary_text = ''
-                    genelocus_text = ''
-                    # parse function (n.b. effect[1] is the gene name)
-                    (effect_type, effect) = function_effect(x[7])
-                    #if effect_type in funcfilter or not args.funcfilter:
-                    if not args.funcfilter or effect_type in funcfilter:
-                        if effect[1] and args.genesummary and effect[1] in genesummary:
-                            genesummary_text = genesummary[effect[1]]
-                        if effect[1] and args.genemapfile and effect[1] in genemap:
-                            genelocus_text = genemap[effect[1]]
 
-                        out_line = '\t'.join([p, chrom, pos, effect[0], genelocus_text, genesummary_text])
-                        
+            # is there a single (or max_shared) progeny with a homozygous (or fuzzy homozygous) non-parental call?
+            #print("Variant site: {} {}".format(chrom, pos))
+            p = single_progeny_hom_fuzzy(sample_calls, sample_freqs, parent, max_shared, min_hom_allele_freq)
+            if p:
+                print("{} = p from single_progeny_hom_fuzzy".format(p))
+                out_line = ''
+                genesummary_text = ''
+                genelocus_text = ''
+                # parse function (n.b. effect[1] is the gene name)
+                (effect_type, effect) = function_effect(x[7])
+                #if effect_type in funcfilter or not args.funcfilter:
+                if not args.funcfilter or effect_type in funcfilter:
+                    if effect[1] and args.genesummary and effect[1] in genesummary:
+                        genesummary_text = genesummary[effect[1]]
+                    if effect[1] and args.genemapfile and effect[1] in genemap:
+                        genelocus_text = genemap[effect[1]]
+
+                    # Determine how many progeny share this variant
+                    if len(p) > 1:
+                        shared_with = len(p) - 1
+                    else:
+                        shared_with = 0
+
+                    # Loop through return progeny and write out variants
+                    for i in p:
+                        out_line = '\t'.join([i, chrom, pos, effect[0], str(shared_with), genelocus_text, genesummary_text])
                         homout.write('{}\n'.format(out_line))
 
-                    # write out VCF line
-                    vcf_line = "\t".join(x)
-                    homout_vcf.write('{}\n'.format(vcf_line))
+                # write out VCF line
+                vcf_line = "\t".join(x)
+                homout_vcf.write('{}\n'.format(vcf_line))
     
     # Get gene position information from file if present
 
@@ -424,7 +559,7 @@ for parent in progeny:
         
         # Write out Excel sheet
         #if args.funcfilter:
-        df = DataFrame(prog_res_list, columns=['Sample','Chromosome','Position', 'Alt allele', 'Mutation type', 'Mutation effect', 'Gene', 'FB gene id', 'NT change', 'AA change', 'Gene location', 'Gene description'])
+        df = DataFrame(prog_res_list, columns=['Sample','Chromosome','Position', 'Alt allele', 'Mutation type', 'Mutation effect', 'Gene', 'FB gene id', 'NT change', 'AA change', 'Shared with', 'Gene location', 'Gene description'])
         #else:
         #    df = DataFrame(prog_res_list, columns=['Sample','Chromosome','Position'])
         sheet_name = prog+'_'+details[prog][0]+'_'+details[prog][1]
