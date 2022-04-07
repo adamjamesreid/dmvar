@@ -25,7 +25,7 @@ Variants are considered only if they are homozygous in the parent and either hom
 
 N.b. This requires bcftools and python imports subprocess, pandas and openpyxl
 
-`python ~/code_development/dmvar/dmvar_results.py -s ../NVS024_vcf_samplesheet.csv -v NVS024_snps_indels_filtered_pass.vcf.snpeff.vcf.gz -f HIGH,MODERATE -g ~/code_development/dmvar/automated_gene_summaries.tsv -m ~/code_development/dmvar/gene_map_table_fb_2021_06.tsv.gz`
+`python ~/code_development/dmvar/dmvar_results.py -s vcf_samplesheet.csv -v combined_filtered_pass.vcf.snpeff.vcf.gz -f HIGH,MODERATE -g ~/code_development/dmvar/automated_gene_summaries.tsv -m ~/code_development/dmvar/gene_map_table_fb_2021_06.tsv.gz`
 
 ## Samplesheets
 
